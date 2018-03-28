@@ -1,0 +1,384 @@
+<html>
+
+<head>
+  <title>DI Hack Demo</title>
+  <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #stats {
+      font-family: 'Source Sans Pro', sans-serif;
+      font-size: 1.5em;
+      position: absolute;
+      top: 10px;
+      left: 100px;
+      z-index: 100;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="stats"></div>
+  <canvas id="myCanvas"></canvas>
+
+  <script src="three.js"></script>
+  <script src="data.js"></script>
+  <script src="neataptic.js"></script>
+  <script src="cleanRoom1.js"></script>
+  <script src="nnSave.js"></script>
+  <script src="neatLogic.js"></script>
+
+
+
+
+  <script>
+    var renderer, scene, camera;
+    myCanvas = document.getElementById('myCanvas');
+    var stats = document.getElementById('stats');
+    let copy = Network.fromJSON(netSave);
+
+    //RENDERER
+    renderer = new THREE.WebGLRenderer({
+      canvas: myCanvas,
+      antialias: true,
+      // logarithmicDepthBuffer: true
+    });
+    //renderer.setClearColor(0x000000);
+    renderer.setClearColor(0xffffff);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    //CAMERA
+    camera = new THREE.PerspectiveCamera(85, window.innerWidth / window.innerHeight, 300, 10000);
+
+    //SCENE
+    scene = new THREE.Scene();
+
+    //LIGHTS
+    var light = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(light);
+
+    //flat color
+    var material = new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      wireframe: false,
+      wireframeLinewidth: 1,
+      wireframeLinecap: 'round',
+      wireframeLinejoin: 'round',
+      shading: THREE.SmoothShading,
+      vertexColors: THREE.NoColors, //used if colors on geomtry
+      reflectivity: 1,
+      refractionRatio: 0.98,
+      combine: THREE.MultiplyOperation,
+      fog: true,
+      aoMap: null,
+      aoMapIntensity: 1,
+      envMap: null,
+      map: null,
+      specularMap: null,
+      alphaMap: null,
+      skinning: false,
+      morphTargets: false,
+    });
+
+    var materialBlue = new THREE.MeshBasicMaterial({
+      color: 0x0000ff,
+      wireframe: true,
+      wireframeLinewidth: 1,
+      wireframeLinecap: 'round',
+      wireframeLinejoin: 'round',
+      shading: THREE.SmoothShading,
+      vertexColors: THREE.NoColors, //used if colors on geomtry
+      reflectivity: 1,
+      refractionRatio: 0.98,
+      combine: THREE.MultiplyOperation,
+      fog: true,
+      aoMap: null,
+      aoMapIntensity: 1,
+      envMap: null,
+      map: null,
+      specularMap: null,
+      alphaMap: null,
+      skinning: false,
+      morphTargets: false,
+    });
+
+    // non-shiny material
+    // var materialFloor = new THREE.MeshLambertMaterial({
+    //   color: 0xf3ffe2,
+    //   lightMap: null,
+    //   lightMapIntensity: 1,
+    //   emissive: 0x000000,
+    //   emissiveMap: null,
+    //   emissiveIntensity: 1,
+    //   specularMap: null,
+    // });
+
+    // var geometry = new THREE.BoxGeometry(100, 100, 100);
+    // geometry.computeLineDistances();
+    // var mesh = new THREE.Mesh(geometry, material);
+    // mesh.position.z = -1000;
+    // mesh.position.x = -100;
+    // scene.add(mesh);
+
+    // var point1 = new THREE.SphereGeometry(50, 20, 20);
+    // var mesh1 = new THREE.Mesh(point1, material);
+    // mesh1.position.z = -1000;
+    // mesh1.position.x = -100;
+    // scene.add(mesh1);
+
+    // for (let j = 0; j < 1; j++) {
+    //   for (let i = 0; i < 100; i++) {
+    //     var point = new THREE.BoxGeometry(2, 2, 2);
+    //     var mesh = new THREE.Mesh(point, material);
+    //     mesh.position.z = -1500 + 10 * j;
+    //     mesh.position.x = -500 + 10 * i;
+    //     scene.add(mesh);
+    //   }
+    // }
+
+    function roundYears(yrs) {
+      return Math.floor(yrs);
+    }
+
+    // for (let i = 0; i < 1; i++) {
+    //   var point = new THREE.PlaneGeometry(4, 4);
+    //   var mesh = new THREE.Mesh(point, material);
+    //   mesh.position.z = -1500 + 15 * baseData[i].Temperature;
+    //   mesh.position.x = -500 + 15 * baseData[i].Humidity;
+    //   mesh.position.y = baseData[i].Years / 10;
+    //   // scene.add(mesh);
+    // }
+
+    let humeVal1 = room1Data[0].hume;
+    let tempVal1 = room1Data[0].temp;
+    let yrs1 = copy.activate([normalizePoint(humeVal1, humidity), normalizePoint(tempVal1, temp)]);
+    yrs1 = restore(yrs1, years);
+
+    // var room1 = new THREE.SphereGeometry(10, 20, 20);
+    // var mesh1 = new THREE.Mesh(room1, materialBlue);
+
+    var room1 = new THREE.ConeGeometry(15, 60, 32);
+    var material = new THREE.MeshBasicMaterial({ color: 0x0000ff });
+    var mesh1 = new THREE.Mesh(room1, material);
+    // scene.add(cone);
+
+    mesh1.position.z = -1500 + 15 * room1Data[0].temp;
+    mesh1.position.x = -500 + 15 * room1Data[0].hume;
+    mesh1.position.y = yrs1 / 10 + 30;
+    mesh1.rotation.z = Math.PI;
+    scene.add(mesh1);
+    stats.innerHTML = `Temperature: ${tempVal1} Humidity: ${humeVal1} Years:${roundYears(yrs1)}`;
+
+    console.log(`z@0 = ${-1500 + 15 * baseData[99].Temperature}`);
+
+    // var room2 = new THREE.SphereGeometry(50, 20, 20);
+    // var mesh2 = new THREE.Mesh(room2, material);
+    // mesh2.position.z = -1000;
+    // mesh2.position.x = -100;
+    // scene.add(mesh2);
+
+    // Floor
+    // var geometry3 = new THREE.PlaneGeometry(20000, 20000, 100, 100);
+    // var mesh3 = new THREE.Mesh(geometry3, materialFloor);
+    // mesh3.rotation.x = -90 * Math.PI / 180;
+    // mesh3.position.y = -100;
+    // scene.add(mesh3);
+
+    /////////////////////Lines
+
+    //Line material
+    var material = new THREE.LineBasicMaterial({
+      color: 0x000000,
+      linewidth: 1,
+    });
+
+    var geometry = new THREE.Geometry();
+    geometry.vertices.push(
+      new THREE.Vector3(-500, 600, 0),
+      new THREE.Vector3(-500, 0, 0),
+      new THREE.Vector3(1000, 0, 0),
+      new THREE.Vector3(1000, 0, -1000)
+    );
+
+    var line = new THREE.Line(geometry, material);
+    scene.add(line);
+
+    /*
+        //Dashed line **also compute distance of geometry**
+        var material = new THREE.LineDashedMaterial({
+          color: 0xF3FFE2,
+          linewidth: 1,
+          dashSize: 2,
+          gapSize: 2
+        });
+        */
+
+    //for dashed lines
+    /*
+        geometry.computeLineDistances();
+        geometry2.computeLineDistances();
+        geometry3.computeLineDistances();
+        */
+
+    // The Text Labels
+    var loader = new THREE.FontLoader();
+    loader.load('fonts/helvetiker_regular.typeface.json', function (font) {
+      var textMaterial = new THREE.MeshBasicMaterial({
+        color: new THREE.Color(0, 0, 0),
+        side: THREE.DoubleSide,
+        wireframe: false,
+        font,
+      });
+
+      var theText = 'Humidity';
+
+      var textShapes = font.generateShapes(theText, 90, 2);
+
+      var text3d = new THREE.ShapeGeometry(textShapes);
+
+      text3d.computeBoundingBox();
+      var centerOffset = -0.5 * (text3d.boundingBox.max.x - text3d.boundingBox.min.x);
+      text = new THREE.Mesh(text3d, textMaterial);
+      text.position.x = centerOffset - 150 - 75;
+      text.position.y = 0;
+      text.position.z = 115;
+      text.rotation.x = (Math.PI * 6) / 4;
+      scene.add(text);
+    });
+
+    loader.load('fonts/helvetiker_regular.typeface.json', function (font) {
+      var textMaterial = new THREE.MeshBasicMaterial({
+        color: new THREE.Color(0, 0, 0),
+        side: THREE.DoubleSide,
+        wireframe: false,
+        font,
+      });
+
+      var theText = 'Years';
+
+      var textShapes = font.generateShapes(theText, 90, 2);
+
+      var text3d = new THREE.ShapeGeometry(textShapes);
+
+      text3d.computeBoundingBox();
+      var centerOffset = -0.5 * (text3d.boundingBox.max.x - text3d.boundingBox.min.x);
+      text = new THREE.Mesh(text3d, textMaterial);
+      text.position.x = centerOffset - 150 - 275;
+      text.position.y = 0;
+      text.position.z = 0;
+      text.rotation.z = (Math.PI * 2) / 4;
+      scene.add(text);
+    });
+
+    loader.load('fonts/helvetiker_regular.typeface.json', function (font) {
+      var textMaterial = new THREE.MeshBasicMaterial({
+        color: new THREE.Color(0, 0, 0),
+        side: THREE.DoubleSide,
+        wireframe: false,
+        font,
+      });
+
+      var theText = 'Temperature';
+
+      var textShapes = font.generateShapes(theText, 90, 2);
+
+      var text3d = new THREE.ShapeGeometry(textShapes);
+
+      text3d.computeBoundingBox();
+      var centerOffset = -0.5 * (text3d.boundingBox.max.x - text3d.boundingBox.min.x);
+      text = new THREE.Mesh(text3d, textMaterial);
+      text.position.x = centerOffset - 150 + 1640;
+      text.position.y = 0;
+      text.position.z = 0;
+      text.rotation.x = (Math.PI * 6) / 4;
+      text.rotation.y = (Math.PI * 0) / 4;
+      text.rotation.z = (Math.PI * 2) / 4;
+      scene.add(text);
+    });
+
+    //
+    //
+    //
+    //
+    //
+    //
+
+    var geometry = new THREE.PlaneGeometry(60, 60, 99, 99);
+
+    for (let i = 0; i < 10000; i++) {
+      // var point = new THREE.PlaneGeometry(4, 4);
+      // var mesh = new THREE.Mesh(point, material);
+      geometry.vertices[i].z = -1500 + 15 * baseData[i].Temperature;
+      geometry.vertices[i].x = -500 + 15 * baseData[i].Humidity;
+      geometry.vertices[i].y = baseData[i].Years / 10;
+      // scene.add(mesh);
+      // geometry.vertices[i].z = baseData[i].Years / 10;
+    }
+
+    var materialDefault = new THREE.MeshPhongMaterial({
+      color: 0xdddddd,
+      wireframe: true,
+    });
+
+    var plane = new THREE.Mesh(geometry, materialDefault);
+    scene.add(plane);
+
+    /*
+    !
+    !
+    */
+
+    //RENDER LOOP
+    render();
+
+    var delta = 0;
+    var dataDelta = 0;
+    function render() {
+      //mesh.rotation.x += 0.01;
+      //mesh.rotation.y += 0.01;
+
+      //with sprite
+
+      delta += 0.025;
+      camera.position.x = Math.sin(delta) * 850 + 370; //changed !!!! from 170
+      camera.position.z = Math.abs(Math.cos(delta)) * 300 + 500; //changed !!!! from 300
+      camera.position.y = 700;
+
+      // var time = clock.getElapsedTime() * 0.5;
+      camera.rotation.x = -0.2; // Math.sin(2000) * 0.1 + 0.1;
+      camera.rotation.y = Math.sin(delta) * 0.6 + 0.1;
+
+      renderer.render(scene, camera);
+
+      dataDelta += 0.5;
+      if (dataDelta % 1 == 0) {
+        let humeVal = room1Data[dataDelta].hume;
+        let tempVal = room1Data[dataDelta].temp;
+        let yrs = copy.activate([normalizePoint(humeVal, humidity), normalizePoint(tempVal, temp)]);
+        yrs = restore(yrs, years);
+
+        mesh1.position.z = -1500 + 15 * room1Data[dataDelta].temp;
+        mesh1.position.x = -500 + 15 * room1Data[dataDelta].hume;
+        mesh1.position.y = yrs / 10 + 30;
+        stats.innerHTML = `Temperature: ${tempVal} Humidity: ${humeVal} Years:${roundYears(yrs)}`;
+      }
+
+      setTimeout(function () {
+        requestAnimationFrame(render);
+      }, 100);
+    }
+
+// let humeVal2 = room2Data[0].hume;
+// let tempVal2 = room2Data[0].temp;
+// let yrs2 = copy.activate([normalizePoint(humeVal2, humidity), normalizePoint(tempVal2, temp)]);
+// yrs2 = restore(yrs2, years);
+// console.log(yrs2);
+  </script>
+</body>
+
+</html>
